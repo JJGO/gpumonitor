@@ -1,0 +1,66 @@
+- name: Bootstrap creating user in machines
+  hosts: all
+  become: yes
+  tasks:
+   - name: Create monitor user
+     user:
+       name: gpumonitor 
+
+   - name: Create home folder
+     file:
+       path: /home/gpumonitor
+       state: directory
+       mode: go-w
+
+   - name: Copy scripts
+     copy:
+       src: "{{ item }}"
+       dest: /home/gpumonitor
+       owner: gpumonitor
+       group: gpumonitor
+     loop:
+       - templates
+       - util
+       - webserver.py
+       - rpcserver.py
+       - config.yml
+       - requirements.txt
+   
+   - name: Create virtualenv
+     become: yes
+     become_user: gpumonitor
+     pip:
+       virtualenv: /home/gpumonitor/env
+       virtualenv_python: python3
+       requirements: /home/gpumonitor/requirements.txt
+
+- name: Install rpc servers
+  hosts: rpcservers
+  become: yes
+  tasks: 
+    - name: Copy RPC service
+      copy:
+        src: services/gpumonitor-rpc.service
+        dest: /etc/systemd/system
+
+    - name: Enable service
+      systemd:
+        name: gpumonitor-rpc
+        enabled: yes
+        state: restarted
+   
+
+- name: Install web server
+  hosts: webserver
+  become: yes
+  tasks:
+    - name: Copy web service
+      copy:
+        src: services/gpumonitor-web.service
+        dest: /etc/systemd/system
+
+    - name: Enable service
+      systemd:
+        name: gpumonitor-web
+        enabled: yes
+        state: restarted

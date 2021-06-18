@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>DDIG Monitor</title>
+  <link rel="shortcut icon" href="/gpus/static/favicon.ico">
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <style>
+    .progress {
+      margin: .5em;
+      height: 2em;
+    }
+
+    .progress-bar {
+      color: black;
+    }
+
+    .bg-danger {
+      color: white;
+    }
+
+    th {
+      text-align: center;
+    }
+
+    .table th{
+        border-top: None;
+    }
+
+    .table td {
+      border-top: None;
+      padding: .2em .75em;
+    }
+
+    @media (prefers-color-scheme: dark) {
+
+        body {
+            background-color: #303030;
+            color: #ddd
+        }
+
+        .progress {
+            background-color: #404040;
+        }
+
+        .progress-bar {
+            color: #ddd;
+        }
+
+        .bg-warning, .bg-danger {
+            color: black;
+        }
+
+        .table {
+            color: #ddd;
+        }
+
+
+
+
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">DDIG Monitor</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <!-- <li class="nav-item active">
+            <a class="nav-link" href="#">Home
+              <span class="sr-only">(current)</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">About</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Services</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Contact</a>
+          </li> -->
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+
+
+
+
+  <!-- Page Content -->
+  <div class="container">
+
+    <div style='margin:2em'>
+    </div>
+
+    {% for host in state %}
+    <div class="row">
+
+      <div class="col-md-6 text-center">
+          {% set short_host = host.split('.')[0] %}
+          {% if state[host] == 'Up' %}
+              <h2 title="{{ gpus[host][0]['model'] }}"> {{ short_host }} </h2>
+          {% elif state[host] == 'Timeout' %}
+              <h2> {{ short_host }} <small> ⚠️ </small> </h2>
+              <p> {{ short_host }} is timing out. Last contact {{ times[host] }} ago</p>
+          {% elif state[host] == 'Down' %}
+              <h2> {{ short_host }} <small> ❌ </small> </h2>
+              <p> {{ short_host }} is disconnected. Last contact {{ times[host] }} ago</p>
+          {% elif state[host] == 'Never' %}
+              <h2> {{ short_host }} <small> ❔ </small> </h2>
+              <p> {{ short_host }} has not been reachable so far</p>
+          {% else %}
+              <h2> {{ short_host }} <small> Invalid state {{ state[host] }} </small> </h2>
+          {% endif %}
+
+          <table style="width: 100%; margin:auto">
+          {% for gpu in gpus[host] %}
+
+              {% set g = loop.index-1 %}
+              {% set gpu = gpus[host][g] %}
+              {% set style = styles[host][g] %}
+
+              <tr>
+
+              <td style="width:50%">
+                 <div class="progress" title="Utilization">
+                   <div class="progress-bar {{ style['util_color'] }} progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{ gpu['utilization'] }}"
+                   aria-valuemin="0" aria-valuemax="100" style="width:{{ gpu['utilization'] }}%">
+                   <span class="justify-content-center d-flex position-absolute" style="width:50%;margin:auto">
+                    {{ gpu['utilization'] }}% ({{ procs[host][g] | length}})
+                    </span>
+                   </div>
+                 </div>
+              </td>
+
+              {% set mem_percent = gpu['memory_used']/gpu['memory_total']*100 %}
+
+              <td style="width:50%">
+                 <div class="progress" title="Memory">
+                   <div class="progress-bar {{ style['mem_color'] }} progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{ mem_percent }}"
+                   aria-valuemin="0" aria-valuemax="100" style="width:{{ mem_percent }}%">
+                   <span class="justify-content-center d-flex position-absolute" style="width:50%;margin:auto">
+                    {{ (gpu['memory_used'] / 1024) | round(1) }} / {{ (gpu['memory_total'] / 1024) | round(1) }} GB
+                    </span>
+                   </div>
+                 </div>
+              </td>
+
+              </tr>
+
+          {% endfor %}
+          </table>
+
+      </div>
+
+      <div class="col-md-6 text-center">
+
+      {{ gpu_tables[host] }}
+
+      </div>
+
+    </div>
+
+    <div style='margin:2em'>
+    </div>
+
+    {% endfor %}
+
+    <div class="row">
+
+      <div class="col-md-6 text-center" style="margin:auto">
+      <h3> User Stats </h3>
+      {{ user_table }}
+      </div>
+
+      <!-- <div class="col-lg-12 text-center">
+        <h1 class="mt-5">A Bootstrap 4 Starter Template</h1>
+        <p class="lead">Complete with pre-defined file paths and responsive navigation!</p>
+        <ul class="list-unstyled">
+          <li>Bootstrap 4.3.1</li>
+          <li>jQuery 3.4.1</li>
+        </ul>
+      </div> -->
+    </div>
+  </div>
+
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  <script>
+  {% if refresh > 0 %}
+  setTimeout(function(){ location.reload(); }, {{ refresh * 1000 }} );
+  {% endif %}
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+[Unit]
+Description=GPUMonitor WebServer
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=gpumonitor
+WorkingDirectory=/home/gpumonitor
+ExecStart=/home/gpumonitor/env/bin/python webserver.py
+
+[Install]
+WantedBy=multi-user.target

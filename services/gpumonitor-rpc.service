@@ -1,0 +1,15 @@
+[Unit]
+Description=GPUMonitor RPC Server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=gpumonitor
+WorkingDirectory=/home/gpumonitor
+ExecStart=/home/gpumonitor/env/bin/python rpcserver.py
+
+[Install]
+WantedBy=multi-user.target
